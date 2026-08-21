@@ -1,0 +1,139 @@
+
+
+E10访问地址：http://192.168.10.240:20600
+用户名/默认密码：【 sysadmin/62f78412-f160-4fe8-828e-8eb0a81a8a36 】
+
+
+租户访问地址：http://192.168.10.240:20600/tenant/login
+用户名/默认密码：【 weaveradmin/a5r8egjrQP}. 】
+
+
+配置文件路径：D:\weaver\E10\webapps\ROOT\WEB-INF\classes\weaver\config\config-center
+
+
+redis相关信息
+IP地址：192.168.10.240
+端口号：20100
+密  码：6uIxrj3R5o
+
+
+rabbitmq相关信息
+IP地址：192.168.10.240
+端口号：20200
+用户名：admin
+密  码：zQR6ZhcWio
+
+
+mongodb相关信息
+IP地址：192.168.10.240
+端口号：20500
+用户名：weaver
+密  码：PYZd68iwhK
+
+
+内置数据库信息
+数据库ip：192.168.10.240
+端口号：3382
+管理员用户：root
+管理员密码：Weaver@2023
+
+
+公共数据库连接信息
+数据库驱动：com.mysql.cj.jdbc.Driver
+数据库链接：jdbc:mysql://192.168:3382/eteams?characterEncoding=utf8&useSSL=false&autoReconnect=true&failOverReadOnly=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&allowMultiQueries=true
+数据库账号：eteams
+数据库密码：7EP5PWacwNPfgwhO2kciILK2
+
+
+E10 数据库连接信息
+数据库类型：mysql
+数据库驱动：com.mysql.cj.jdbc.Driver
+数据库链接：jdbc:mysql://192.168.10.240:3382/ecology10?characterEncoding=utf8&useSSL=false&autoReconnect=true&failOverReadOnly=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&allowMultiQueries=true
+数据库账号：ecology10
+数据库密码：LdYouOZJgDhePU954NzddcZl
+
+
+weaver-secondev-service 数据库连接信息
+数据库类型：mysql
+数据库驱动：com.mysql.cj.jdbc.Driver
+数据库链接：jdbc:mysql://192.168.10.240:3382/ecology10?characterEncoding=utf8&useSSL=false&autoReconnect=true&failOverReadOnly=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&allowMultiQueries=true
+数据库账号：ecology10
+数据库密码：LdYouOZJgDhePU954NzddcZl
+
+
+
+
+
+正式环境
+
+
+
+
+E10访问地址：http://47.106.103.169:20600
+用户名/默认密码：【 sysadmin/86f98213-0890-49e1-9e62-d500e15becb0 】
+
+
+租户访问地址：http://47.106.103.169:20600/tenant/login
+用户名/默认密码：【 weaveradmin/yQwrWNCROd!^ 】
+
+
+配置文件路径：/data/jwyoa/ecology/opt/weaver/e10-server0/E10/webapps/ROOT/WEB-INF/classes/weaver/config/config-center
+
+
+elasticsearch相关信息
+IP地址：47.106.103.169
+端口号：20400
+用户名：elastic
+密  码：mseJMBYC0n
+
+
+mongodb相关信息
+IP地址：47.106.103.169
+端口号：20501
+用户名：weaver
+密  码：t6U2HrCa9s
+
+
+rabbitmq相关信息
+IP地址：47.106.103.169
+端口号：20201
+用户名：admin
+密  码：g5JgPbcSvr
+
+
+redis相关信息
+IP地址：47.106.103.169
+端口号：20100
+密  码：dsx06oUT6F
+
+
+公共数据库连接信息
+数据库驱动：com.mysql.cj.jdbc.Driver
+数据库链接：jdbc:mysql://rm-wz967vx9c2sp0788u6o.mysql.cn-shenzhen.rds.aliyuncs.com:3306/eteams?characterEncoding=utf8&useSSL=false&autoReconnect=true&failOverReadOnly=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&allowMultiQueries=true
+数据库账号：eteams
+数据库密码：eny0p9Ldhpgckdgwx6hhRecn
+
+
+weaver-im 数据库连接信息
+数据库类型：Mysql
+数据库驱动：com.mysql.cj.jdbc.Driver
+数据库链接：jdbc:mysql://rm-wz967vx9c2sp0788u6o.mysql.cn-shenzhen.rds.aliyuncs.com:3306/db_im?characterEncoding=utf8&useSSL=false&autoReconnect=true&failOverReadOnly=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&allowMultiQueries=true
+数据库账号：imapp
+数据库密码：2ziFltQ7xLuRR9XDSFL1L8nx
+
+
+E10 数据库连接信息
+数据库类型：mysql
+数据库驱动：com.mysql.cj.jdbc.Driver
+数据库链接：jdbc:mysql://rm-wz967vx9c2sp0788u6o.mysql.cn-shenzhen.rds.aliyuncs.com:3306/ecology10?characterEncoding=utf8&useSSL=false&autoReconnect=true&failOverReadOnly=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&allowMultiQueries=true
+数据库账号：ecology10
+数据库密码：WaiZiBIUBFXwLXbJQe1wb2jX
+
+
+weaver-secondev-service 数据库连接信息
+数据库类型：mysql
+数据库驱动：com.mysql.cj.jdbc.Driver
+数据库链接：jdbc:mysql://rm-wz967vx9c2sp0788u6o.mysql.cn-shenzhen.rds.aliyuncs.com:3306/ecology10?characterEncoding=utf8&useSSL=false&autoReconnect=true&failOverReadOnly=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&allowMultiQueries=true
+数据库账号：ecology10
+数据库密码：WaiZiBIUBFXwLXbJQe1wb2jX
+
