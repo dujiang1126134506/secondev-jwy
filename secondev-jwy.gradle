@@ -1,7 +1,7 @@
 description = "E10 集成企业微信日程（会议提醒）二开模块"
 
-// 后端二开打包规范（文档 2.6.1）：排除 resources 目录，二开配置通过外部文件提供，
-// 避免资源打进 jar 导致多二开包冲突；部署后在服务器放置同名外部配置文件即可覆盖。
+// 后端二开打包规范（文档 2.6.1）：排除 resources 目录。
+// 企业微信配置由 E10 配置中心的 weaver-secondev-wecom.properties 提供。
 sourceSets {
     main {
         resources {

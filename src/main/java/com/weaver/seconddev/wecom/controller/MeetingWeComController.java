@@ -62,12 +62,12 @@ public class MeetingWeComController {
     private final MeetingSyncService syncService;
 
     /**
-     * 无参构造由 Spring 容器调用；在此完成配置加载与同步服务装配。
+     * 由 Spring 注入 E10 配置中心绑定的企业微信配置，并完成同步服务装配。
      *
+     * @param config 企业微信配置
      * @author DuJiang
      */
-    public MeetingWeComController() {
-        WeComConfig config = WeComConfig.load();
+    public MeetingWeComController(WeComConfig config) {
         this.syncService = new MeetingSyncService(config);
         log.info("[MeetingWeComController] 初始化完成, useridMode={}", config.getUseridMode());
     }

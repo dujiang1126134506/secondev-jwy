@@ -1,56 +1,71 @@
 package com.weaver.seconddev.wecom.config;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
+import org.springframework.context.annotation.Configuration;
+
+import javax.annotation.PostConstruct;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Properties;
-import com.weaver.seconddev.wecom.util.Util;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * 企业微信集成配置。
  *
- * <p>配置加载优先级：</p>
- * <ol>
- *   <li>外部绝对路径配置文件（系统属性 <code>wecom.config.path</code> 指定，
- *       或默认 <code>${user.home}/wecom/wecom-config.properties</code>，便于运维按环境覆盖）</li>
- *   <li>classpath 下的 <code>wecom/wecom-config.properties</code></li>
- * </ol>
+ * <p>配置来源为 E10 配置中心中的
+ * {@code weaver-secondev-wecom.properties}。配置文件由
+ * {@code com.weaver.custom.configcenter.SecondevWeComConfigCenter}
+ * 注册，属性通过 Spring {@link Value} 注入。</p>
  *
  * @author DuJiang
  */
 @Slf4j
+@Configuration
+@RefreshScope
 public class WeComConfig implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /** classpath 内默认配置文件（带包路径，避免多 jar 同名资源冲突） */
-    private static final String DEFAULT_CONFIG_PATH = "wecom/wecom-config.properties";
-    /** 外部配置路径的系统属性名 */
-    private static final String CONFIG_PATH_PROP = "wecom.config.path";
-
     /** corpid */
+    @Value("${wecom.corpid:}")
     private String corpid;
     /** corpsecret */
+    @Value("${wecom.corpsecret:}")
     private String corpsecret;
     /** token 提前刷新秒数 */
-    private int tokenSafeSecs = 200;
+    @Value("${wecom.token.safe.secs:200}")
+    private int tokenSafeSecs;
     /** 企业微信 API 基础域名 */
-    private String apiBase = "https://qyapi.weixin.qq.com/cgi-bin";
+    @Value("${wecom.api.base:https://qyapi.weixin.qq.com/cgi-bin}")
+    private String apiBase;
     /** 共享日历标题模板 */
-    private String calendarTitle = "E10会议-{meetingId}";
+    @Value("${wecom.calendar.title:}")
+    private String calendarTitle;
     /** 共享日历描述 */
-    private String calendarDescription = "来自 OA 的会议提醒";
-    /** 日程提醒提前量（秒），有序 */
-    private List<Integer> remindBeforeSecs = new ArrayList<>(Arrays.asList(3600, 600));
+    @Value("${wecom.calendar.description:来自 OA 的会议提醒}")
+    private String calendarDescription;
+    /** 日程提醒提前量（秒），逗号分隔 */
+    @Value("${wecom.remind.before.secs:3600,600}")
+    private String remindBeforeSecsValue;
     /** userid 映射模式：direct / phone / mobile */
-    private String useridMode = "direct";
-    /** E10 多租户组织识别码（组织识别码），用于 eteams.employee 等组织表过滤 */
-    private String tenantKey = "";
+    @Value("${wecom.userid.mode:direct}")
+    private String useridMode;
+    /** E10 多租户组织识别码，用于 eteams.employee 等组织表过滤 */
+    @Value("${wecom.tenant.key:}")
+    private String tenantKey;
+
+    /** 输出不包含敏感值的加载结果，便于部署后确认配置中心绑定状态。 */
+    @PostConstruct
+    public void afterPropertiesSet() {
+        if (!hasText(corpid) || !hasText(corpsecret)) {
+            log.warn("[WeComConfig] 企业微信凭证未配置，请检查 weaver-secondev-wecom.properties 中的 wecom.corpid/wecom.corpsecret");
+            return;
+        }
+        log.info("[WeComConfig] E10 配置中心加载完成, useridMode={}, tenantKeyConfigured={}",
+                useridMode, hasText(tenantKey));
+    }
 
     public String getCorpid() {
         return corpid;
@@ -85,7 +100,7 @@ public class WeComConfig implements Serializable {
     }
 
     public String getCalendarTitle() {
-        return calendarTitle;
+        return hasText(calendarTitle) ? calendarTitle : "E10会议-{meetingId}";
     }
 
     public void setCalendarTitle(String calendarTitle) {
@@ -101,11 +116,35 @@ public class WeComConfig implements Serializable {
     }
 
     public List<Integer> getRemindBeforeSecs() {
-        return remindBeforeSecs;
+        List<Integer> secs = new ArrayList<>();
+        if (hasText(remindBeforeSecsValue)) {
+            for (String part : remindBeforeSecsValue.split(",")) {
+                try {
+                    secs.add(Integer.valueOf(part.trim()));
+                } catch (NumberFormatException ignored) {
+                    log.warn("[WeComConfig] 忽略非法日程提醒配置项: {}", part);
+                }
+            }
+        }
+        return secs.isEmpty() ? new ArrayList<>(Arrays.asList(3600, 600)) : secs;
     }
 
     public void setRemindBeforeSecs(List<Integer> remindBeforeSecs) {
-        this.remindBeforeSecs = remindBeforeSecs;
+        if (remindBeforeSecs == null || remindBeforeSecs.isEmpty()) {
+            this.remindBeforeSecsValue = "";
+            return;
+        }
+        StringBuilder value = new StringBuilder();
+        for (Integer seconds : remindBeforeSecs) {
+            if (seconds == null) {
+                continue;
+            }
+            if (value.length() > 0) {
+                value.append(',');
+            }
+            value.append(seconds);
+        }
+        this.remindBeforeSecsValue = value.toString();
     }
 
     public String getUseridMode() {
@@ -124,95 +163,7 @@ public class WeComConfig implements Serializable {
         this.tenantKey = tenantKey;
     }
 
-    /**
-     * 加载配置。
-     *
-     * @return 配置实例；加载失败时返回携带默认值的实例
-     * @author DuJiang
-     */
-    public static WeComConfig load() {
-        WeComConfig config = new WeComConfig();
-        Properties props = new Properties();
-
-        boolean loaded = loadFromClasspath(props);
-        String externalPath = System.getProperty(CONFIG_PATH_PROP);
-        if (externalPath != null && loadFromFile(props, externalPath)) {
-            loaded = true;
-        }
-        File defaultExternal = new File(System.getProperty("user.home"), DEFAULT_CONFIG_PATH);
-        if (defaultExternal.exists() && defaultExternal.isFile()) {
-            loadFromFile(props, defaultExternal.getAbsolutePath());
-            loaded = true;
-        }
-
-        config.apply(props);
-        if (!loaded) {
-            log.warn("[WeComConfig] 未找到任何配置文件，使用默认/占位配置，请检查 wecom-config.properties 是否就绪");
-        }
-        return config;
-    }
-
-    /**
-     * 从 classpath 加载属性。
-     *
-     * @author DuJiang
-     */
-    private static boolean loadFromClasspath(Properties props) {
-        try (InputStream in = WeComConfig.class.getClassLoader().getResourceAsStream(DEFAULT_CONFIG_PATH)) {
-            if (in != null) {
-                props.load(in);
-                return true;
-            }
-        } catch (Exception e) {
-            log.warn("[WeComConfig] 读取 classpath 配置失败: {}", e.getMessage());
-        }
-        return false;
-    }
-
-    /**
-     * 从外部文件加载属性。
-     *
-     * @author DuJiang
-     */
-    private static boolean loadFromFile(Properties props, String path) {
-        try (InputStream in = new FileInputStream(path)) {
-            props.load(in);
-            log.info("[WeComConfig] 已加载外部配置: {}", path);
-            return true;
-        } catch (Exception e) {
-            log.error("[WeComConfig] 读取外部配置失败 {}: {}", path, e.getMessage());
-        }
-        return false;
-    }
-
-    /**
-     * 将属性应用到配置实例。
-     *
-     * @author DuJiang
-     */
-    private void apply(Properties props) {
-        setCorpid(props.getProperty("wecom.corpid", getCorpid()));
-        setCorpsecret(props.getProperty("wecom.corpsecret", getCorpsecret()));
-        setTokenSafeSecs(Util.getIntValue(props.getProperty("wecom.token.safe.secs"), getTokenSafeSecs()));
-        setApiBase(props.getProperty("wecom.api.base", getApiBase()));
-        setCalendarTitle(props.getProperty("wecom.calendar.title", getCalendarTitle()));
-        setCalendarDescription(props.getProperty("wecom.calendar.description", getCalendarDescription()));
-        setUseridMode(props.getProperty("wecom.userid.mode", getUseridMode()));
-        setTenantKey(props.getProperty("wecom.tenant.key", getTenantKey()));
-
-        String remindSecs = props.getProperty("wecom.remind.before.secs");
-        if (remindSecs != null && !remindSecs.trim().isEmpty()) {
-            List<Integer> secs = new ArrayList<>();
-            for (String part : remindSecs.split(",")) {
-                try {
-                    secs.add(Integer.valueOf(part.trim()));
-                } catch (NumberFormatException ignored) {
-                    // 忽略非法提醒配置项
-                }
-            }
-            if (!secs.isEmpty()) {
-                setRemindBeforeSecs(secs);
-            }
-        }
+    private static boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 }

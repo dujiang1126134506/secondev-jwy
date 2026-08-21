@@ -47,31 +47,36 @@ src/main/java/com/weaver/seconddev/wecom/
 ├── controller/MeetingWeComController.java  # 后端 Controller 入口（Spring，/api/secondev/wecom/*，返回 WeaResult）
 └── util/HttpClientUtil.java           # HTTP 客户端封装（httpclient 4.5）
 
-src/main/resources/wecom/wecom-config.properties   # 集成配置
+src/main/resources/wecom/weaver-secondev-wecom.properties  # 本地配置模板（构建时排除）
+src/main/java/com/weaver/custom/configcenter/
+└── SecondevWeComConfigCenter.java                 # 注册 E10 自定义配置文件
 ```
 
 ## 3. 配置说明
 
-编辑 `src/main/resources/wecom/wecom-config.properties`（**注意：打包时已按规范 2.6.1 排除 resources，该文件不会打进 jar，部署时需以外部配置文件形式提供**）：
+运行时配置文件固定命名为 `weaver-secondev-wecom.properties`。仓库中的同名
+`src/main/resources/wecom/weaver-secondev-wecom.properties` 仅作为本地字段模板，构建时会被排除。
 
 | 配置项 | 说明 | 默认值 |
 | --- | --- | --- |
-| `wecom.corpid` | 企业微信自建应用 corpid | 1000012（占位，按实际替换） |
-| `wecom.corpsecret` | 企业微信自建应用 corpsecret | 见文件（按实际替换） |
+| `wecom.corpid` | 企业微信自建应用 corpid | 无，必须配置 |
+| `wecom.corpsecret` | 企业微信自建应用 corpsecret | 无，必须配置 |
 | `wecom.token.safe.secs` | token 提前刷新秒数 | 200 |
 | `wecom.api.base` | 企微 API 基础域名 | https://qyapi.weixin.qq.com/cgi-bin |
 | `wecom.calendar.title` | 共享日历标题模板，`{meetingId}` 替换 | `E10会议-{meetingId}` |
 | `wecom.remind.before.secs` | 提醒提前量（秒，逗号分隔） | `3600,600` |
-| `wecom.userid.mode` | 映射模式：`direct` 透传 / `phone` E10登录名→手机号→企微userid / `mobile` 手机号直传 | phone |
-| `wecom.userid.phone.sql` | `phone` 模式下查询手机号的 SQL，必须含 `?` 占位符，结果列名为 `mobile` | `SELECT mobile FROM HrmResource WHERE loginid = ?` |
+| `wecom.userid.mode` | 映射模式：`direct` 透传 / `phone` E10用户ID→手机号→企微userid / `mobile` 手机号直传 | direct |
 
-**运行期配置（resources 已排除，必须用外部文件）**：打包时规范 2.6.1 要求排除 resources 目录，因此
-`wecom-config.properties` **不会打进 jar**。部署后须在服务器提供外部配置文件，按优先级加载：
-1. 系统属性指定：`-Dwecom.config.path=/path/wecom-config.properties`
-2. 默认位置：`${user.home}/wecom-config.properties`
+**运行期配置（resources 已排除，必须使用 E10 配置中心）**：
 
-未提供外部配置时，`WeComConfig` 仅使用占位默认值（corpid/corpsecret 为文档示例值，会导致调用失败），
-**务必在部署前放置真实配置**。
+1. 单体环境：将 `weaver-secondev-wecom.properties` 放到二开服务的
+   `webapps/ROOT/WEB-INF/classes/weaver/config/config-center/` 目录，修改后重启服务。
+2. 微服务组合环境：在 Nacos 的 `DEFAULT_GROUP` 下新增 Data ID
+   `weaver-secondev-wecom.properties`。
+3. 二开 Jar 内的 `SecondevWeComConfigCenter` 已注册该 Data ID，
+   `WeComConfig` 通过 Spring `@Value` 获取属性。
+
+未提供 `wecom.corpid` 或 `wecom.corpsecret` 时，启动日志会输出明确告警。
 
 > ⚠️ `corpid` / `corpsecret` 为敏感凭证，请在实际部署时替换为企业微信后台实际值，勿外泄。
 
@@ -85,8 +90,8 @@ src/main/resources/wecom/wecom-config.properties   # 集成配置
 自动注册 `MeetingWeComController` 并暴露 `/api/secondev/wecom/*` 接口，无需启动独立进程。
 
 > ⚠️ **严禁手动修改服务器上的 `applicationContext-secondev-dubbo.xml`**（规范 2.5）。该文件升级会被覆盖，
-> 会导致二开功能失效。如需调整二开相关 XML 配置，统一到 e-code 监控管理平台
-> （`/ecode/monitor/loom/deploy/jar`）的配置文件编辑入口修改。
+> 会导致二开功能失效。配置管理由主团队管理员访问
+> `/ecode/monitor/config/manage`；Jar 版本管理入口为 `/ecode/monitor/loom/jar/versionList`。
 
 ### 步骤二：E10 会议模块挂接触发
 
