@@ -35,8 +35,8 @@ public class MeetingInfo implements Serializable {
     /** 会议地点 / 会议室 */
     private String location;
 
-    /** 参会人（E10 账号，如工号），需映射为企业微信 userid；元素可为 String，也可为对象（如 {userid:...} / {account:...}），由映射层兼容解析 */
-    private List<Object> attendees = new ArrayList<>();
+    /** 参会人（E10 用户 ID），需映射为企业微信 userid；由映射层通过工具类（UserContext）获取手机号后换取 userid */
+    private List<String> attendees = new ArrayList<>();
 
     public String getMeetingId() {
         return meetingId;
@@ -86,11 +86,11 @@ public class MeetingInfo implements Serializable {
         this.location = location;
     }
 
-    public List<Object> getAttendees() {
+    public List<String> getAttendees() {
         return attendees;
     }
 
-    public void setAttendees(List<Object> attendees) {
+    public void setAttendees(List<String> attendees) {
         this.attendees = attendees == null ? new ArrayList<>() : attendees;
     }
 

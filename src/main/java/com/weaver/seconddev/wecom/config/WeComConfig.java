@@ -49,14 +49,6 @@ public class WeComConfig implements Serializable {
     private List<Integer> remindBeforeSecs = new ArrayList<>(Arrays.asList(3600, 600));
     /** userid 映射模式：direct / phone / mobile */
     private String useridMode = "direct";
-    /**
-     * phone 模式下查询手机号的 SQL（E10 版本）。
-     * 使用 E10 原生人员主表 {@code eteams.employee}（E10 组织数据在 eteams 库），
-     * 登录列 {@code username}，手机号 {@code mobile}，多租户过滤列 {@code TENANT_KEY}。
-     * 因 {@code com.weaver.verupgrade.conn.RecordSet} 默认连接 ecology10 库，跨库查询必须带 {@code eteams.} 前缀。
-     * 两个 ? 占位符顺序为：登录名、租户键。
-     */
-    private String useridPhoneSql = "SELECT mobile FROM eteams.employee WHERE username = ? AND TENANT_KEY = ? AND delete_type = 0 AND STATUS = 'normal' AND TYPE = 'inside'";
     /** E10 多租户组织识别码（组织识别码），用于 eteams.employee 等组织表过滤 */
     private String tenantKey = "";
 
@@ -122,14 +114,6 @@ public class WeComConfig implements Serializable {
 
     public void setUseridMode(String useridMode) {
         this.useridMode = useridMode;
-    }
-
-    public String getUseridPhoneSql() {
-        return useridPhoneSql;
-    }
-
-    public void setUseridPhoneSql(String useridPhoneSql) {
-        this.useridPhoneSql = useridPhoneSql;
     }
 
     public String getTenantKey() {
@@ -214,7 +198,6 @@ public class WeComConfig implements Serializable {
         setCalendarTitle(props.getProperty("wecom.calendar.title", getCalendarTitle()));
         setCalendarDescription(props.getProperty("wecom.calendar.description", getCalendarDescription()));
         setUseridMode(props.getProperty("wecom.userid.mode", getUseridMode()));
-        setUseridPhoneSql(props.getProperty("wecom.userid.phone.sql", getUseridPhoneSql()));
         setTenantKey(props.getProperty("wecom.tenant.key", getTenantKey()));
 
         String remindSecs = props.getProperty("wecom.remind.before.secs");

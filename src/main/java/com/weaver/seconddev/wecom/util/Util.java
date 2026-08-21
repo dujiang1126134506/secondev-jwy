@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -137,47 +139,79 @@ public class Util {
         return UUID.randomUUID().toString().replaceAll("-", "");
     }
 
-    /**
-     * 从参会人元素中提取账号标识（兼容 String 与 Map / JSONObject）。
-     *
-     * <p>元素可能来自会议模块的不同传参形态：</p>
-     * <ul>
-     *   <li>String：直接视为账号（工号 / 登录名 / 手机号）</li>
-     *   <li>Map / JSONObject：按常见键名依次取值（account / loginid / loginName / username / userid / workcode / mobile），
-     *       命中任一非空值即返回；全未命中则回退 toString</li>
-     * </ul>
-     *
-     * @param raw 参会人元素
-     * @return 账号标识；入参为 null 或空返回空串
-     * @author DuJiang
-     */
-    public static String getAccountFromAttendee(Object raw) {
-        if (raw == null) {
-            return "";
-        }
-        if (raw instanceof String) {
-            return ((String) raw).trim();
-        }
-        if (raw instanceof Map) {
-            Map<?, ?> map = (Map<?, ?>) raw;
-            String[] keys = {"account", "loginid", "loginName", "loginname", "username", "userid", "workcode", "mobile"};
-            for (String key : keys) {
-                Object v = map.get(key);
-                if (v != null && !v.toString().trim().isEmpty()) {
-                    return v.toString().trim();
-                }
-            }
-        }
-        String s = raw.toString();
-        return s == null ? "" : s.trim();
-    }
-
     public static String getUUIDStartsWithLetter() {
         String uuid;
         for (uuid = getUUID(); Character.isDigit(uuid.charAt(0)); uuid = getUUID()) {
         }
 
         return uuid;
+    }
+
+    /** 常见日期时间格式（按顺序尝试解析，返回秒级时间戳） */
+    private static final String[] DATE_PATTERNS = {
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd HH:mm",
+            "yyyy-MM-dd HH",
+            "yyyy-MM-dd",
+            "yyyy/MM/dd HH:mm:ss",
+            "yyyy/MM/dd HH:mm",
+            "yyyy/MM/dd"
+    };
+
+    /**
+     * 将日期时间字符串解析为秒级时间戳（东八区）。
+     *
+     * <p>支持常见格式：{@code yyyy-MM-dd HH:mm:ss}、{@code yyyy-MM-dd HH:mm}、{@code yyyy-MM-dd}、
+     * 以及斜杠分隔变体。所有格式均按 Asia/Shanghai 时区解析。</p>
+     *
+     * @param dateStr 日期时间字符串
+     * @return 秒级时间戳；无法解析返回 null
+     * @author DuJiang
+     */
+    public static Long parseDateToSeconds(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty()) {
+            return null;
+        }
+        String text = dateStr.trim();
+        for (String pattern : DATE_PATTERNS) {
+            SimpleDateFormat sdf = new SimpleDateFormat(pattern);
+            sdf.setLenient(false);
+            try {
+                return sdf.parse(text).getTime() / 1000L;
+            } catch (ParseException ignored) {
+                // 尝试下一个格式
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 将入参转为秒级时间戳：数字直接取值，字符串尝试按数字或日期时间格式解析。
+     *
+     * <p>数字：{@code 1724222700} 直接返回；字符串：先按 {@link Long#parseLong} 解析，
+     * 失败则按日期时间格式（{@link #parseDateToSeconds}）解析。</p>
+     *
+     * @param raw 原始值（Number / 字符串）
+     * @return 秒级时间戳；无法解析返回 null
+     * @author DuJiang
+     */
+    public static Long toSeconds(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        if (raw instanceof Number) {
+            return ((Number) raw).longValue();
+        }
+        String text = String.valueOf(raw).trim();
+        if (text.isEmpty()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(text);
+        } catch (NumberFormatException ignored) {
+            // 非纯数字，按日期时间格式解析
+        }
+        return parseDateToSeconds(text);
     }
 
 //    public static String getExceptionMsg(Throwable ex) {

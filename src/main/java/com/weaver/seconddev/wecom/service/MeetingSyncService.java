@@ -7,7 +7,6 @@ import com.weaver.seconddev.wecom.model.WeComResult;
 import com.weaver.seconddev.wecom.service.impl.DirectUserIdMapper;
 import com.weaver.seconddev.wecom.service.impl.MobileUserIdMapper;
 import com.weaver.seconddev.wecom.service.impl.PhoneUserIdMapper;
-import com.weaver.seconddev.wecom.util.Util;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -239,18 +238,17 @@ public class MeetingSyncService {
      */
     private List<String> resolveAttendees(MeetingInfo meeting) {
         List<String> userids = new ArrayList<>();
-        for (Object attendee : meeting.getAttendees()) {
-            String account = Util.getAccountFromAttendee(attendee);
-            if (account.isEmpty()) {
+        for (String userId : meeting.getAttendees()) {
+            if (userId == null || userId.trim().isEmpty()) {
                 log.info("[MeetingSyncService] 参会人为空，跳过(meetingId={})", meeting.getMeetingId());
                 continue;
             }
-            String userId = userIdMapper.map(account);
-            if (userId == null || userId.trim().isEmpty()) {
-                log.warn("[MeetingSyncService] 告警：E10账号[{}] 未映射到企业微信 userid，已跳过该参会人（meetingId={}）", account, meeting.getMeetingId());
+            String wecomUserid = userIdMapper.map(userId.trim());
+            if (wecomUserid == null || wecomUserid.trim().isEmpty()) {
+                log.warn("[MeetingSyncService] 告警：E10用户ID[{}] 未映射到企业微信 userid，已跳过该参会人（meetingId={}）", userId, meeting.getMeetingId());
                 continue;
             }
-            userids.add(userId);
+            userids.add(wecomUserid);
         }
         return userids;
     }

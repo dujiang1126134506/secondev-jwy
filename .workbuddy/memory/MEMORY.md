@@ -14,6 +14,13 @@
 - `/sapi`：内部服务间通信，无法通过 e10 地址访问，外部系统调用须走 `/sapi` + 开放平台认证
 - 路由格式：`/(s)api/secondev/xxx/xxx`（移动端加 `/app`，后台加 `/bs`）
 - **严禁随意声明 `/papi` 接口**
+- **二开接口必须用 `/api/secondev/**` 前缀**（实测网关只放行该系列）：
+  `weaver-gateway.properties` routes[171] = `/api/secondev/**`, `/papi/secondev/**`, `/api/bs/secondev/**`, `/api/app/bs/secondev/**`, `/api/app/secondev/**`, `/papi/app/secondev/**`（**无 /sapi/secondev**，用 /sapi 会 405）
+  `weaver-secondev-service.properties` 已配置 `/api/secondev/**` 免鉴权白名单
+- **`/api` 前缀需登录（CAS）**：`/api/secondev/**` 虽已权限豁免（`weaver.permission.path.exclude`），但**登录态校验（CAS，`weaver.cas.client.url.whitelist`）先于权限校验**。若接口不在 CAS 白名单，匿名请求返回 **401 `token empty or invalid`**。
+  - 排查 401：`weaver-secondev-service.properties` 中 `weaver.cas.client.url.whitelist`（默认含 swagger/health，**不含 /api/secondev/**），需追加 `,/api/secondev/**` 并重启 secondev 服务。
+  - 该配置属 `weaver-common-cas-core` 组件，e-code 配置中心搜「secondev」找不到，需搜「cas / whitelist」或直接改服务器配置文件（测试路径 `D:\weaver\E10\webapps\ROOT\WEB-INF\classes\weaver\config\config-center\weaver-secondev-service.properties`）。
+  - 实现类：`com.weaver.common.cas.client.common.SecurityCasUtils`（读 `urlWhiteList`，通过 `WeaverCasProperties` 绑定 `weaver.cas.client.*`）。
 - 本项目接口：`/api/secondev/wecom/syncMeeting`、`/updateMeeting`、`/cancelMeeting`、`/health`
 
 ### 3. Controller 响应参数（规范 2.3）
@@ -105,13 +112,13 @@ Object data = result.getData();          // 运行期类型（SimpleOpenEmployee
 >
 > 服务获取规范：`com.weaver.allinone.boot.context.AllinoneSpringContext.getBean(Class)`（已在 secDevClasses）。
 >
-> 已落地：`PhoneUserIdMapper` 查询手机号改为「① HRM 服务 `HrmRemoteOpenEmployeeService.findByAccountAndkey`（反射读 mobile）→ ② 失败回退 SQL 查 `eteams.employee`」。
+> 已落地：`PhoneUserIdMapper` 参会人元素为 **E10 用户 ID（String）**，手机号获取「① 工具类 `UserContext.getUser(userId).getMobile()` → ② 失败回退 SQL 查 `eteams.employee`（按 ID）」。
 
 ## 集成企业微信日程实现要点（本模块）
 - 入口：`controller/MeetingWeComController`（Spring 后端方式，替代原云函数 `MeetingToWeComAction`）。
 - 同步编排：`service/MeetingSyncService`（按 meetingId 进程内缓存 cal_id/schedule_id 实现幂等与共享日历复用）。
 - 企微 API：`client/WeComScheduleClient`（gettoken 缓存 7200s、遇 40014 自动刷新重试）。
-- userid 映射：默认 `phone` 模式（E10 与企微按手机号绑定，查 `eteams.employee.username→mobile` → user/get_by_mobile）；
+- userid 映射：默认 `phone` 模式（E10 与企微按手机号绑定，参会人传 **E10 用户 ID** → 工具类 `UserContext.getUser().getMobile()` 取手机号 → user/get_by_mobile）；
   另有 `direct` / `mobile` 模式，接口为 `service/UserIdMapper`。
 - 部署前替换 `corpid`/`corpsecret` 为企微后台实际值；应用需开通「通讯录」读权限 + 「企业微信日程（OA）」权限。
 
@@ -120,3 +127,12 @@ Object data = result.getData();          // 运行期类型（SimpleOpenEmployee
 - 测试服务器 IP：`192.168.10.240`（MySQL `192.168.10.240:3382`，库 `ecology10`/`eteams`）。
 - secDevClasses / secDevLib 为 E10 运行期类与 jar（平台自带，编译期 `implementation` 引用，不打进二开 jar）。
 - 构建：`./gradlew :secondev-jwy:build`；产物 `secondev-jwy/build/libs/build.zip`。
+
+## E10 动作流获取 Eteams id（用户咨询，官方文档确认）
+- **动作流后端不自动提供 eteamsId**（官方安全约束：「动作流不提供后端获取 eteamsId 机制（涉及安全问题），前端可在登录后获取 eteamsid 登录凭证」）。
+- 动作流 Http 组件/连接器参数获取当前用户 Eteams id 的三种方式：
+  1. 参数「**动态赋值 → 系统参数 → 当前用户 id**」（动作流引擎注入的当前操作人 employeeId = eteams.employee.ID，最常用）。
+  2. 前端 JS：`TEAMS.currentUser.id`（当前人员 id）、`TEAMS.currentUser.loginAccount`（账号）。
+  3. 动作流内置函数 `GETEMPIDBYNUMBER(人员编号)`：工号 → E10 用户 ID。
+- 本模块 `attendees` 传的是 E10 用户 ID（String），正好对接「当前用户 id」系统参数。
+- 参考：泛微《推送凭证配置说明》《调用自定义动作流对接方式 V2》。
